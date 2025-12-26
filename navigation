@@ -1,0 +1,174 @@
+package com.example.compose
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme {
+                WorkshopApp()
+            }
+        }
+    }
+}
+
+@Composable
+fun RegistrationScreen(navController: NavController) {
+
+    // ✅ SAME AS PAPER
+    var title by remember { mutableStateOf("") }
+    var Id by remember { mutableStateOf("") }
+    var nsessions by remember { mutableStateOf("") }
+    var check by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text("Workshop Registration", style = MaterialTheme.typography.headlineMedium)
+
+        Spacer(Modifier.height(16.dp))
+
+        TextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Workshop Title") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        TextField(
+            value = Id,
+            onValueChange = { Id = it },
+            label = { Text("Workshop ID") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        TextField(
+            value = nsessions,
+            onValueChange = { nsessions = it },
+            label = { Text("Number of Sessions") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = check,
+                onCheckedChange = { check = it }
+            )
+            Text("Confirm registration details")
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(onClick = {
+            val sessionCount = nsessions.toIntOrNull() ?: 0
+
+            if (title.isNotBlank() && Id.isNotBlank() && sessionCount > 0 && check) {
+                error = ""
+                navController.navigate(
+                    "confirm/$title/$Id/$sessionCount"
+                )
+            } else {
+                error = "Please enter valid details and confirm the registration."
+            }
+        }) {
+            Text("Submit")
+        }
+
+        if (error.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text(error, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+@Composable
+fun WorkshopApp() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = "register"
+    ) {
+        composable("register") {
+            RegistrationScreen(navController)
+        }
+
+        composable(
+            route = "confirm/{title}/{id}/{sessions}",
+            arguments = listOf(
+                navArgument("title") { type = NavType.StringType },
+                navArgument("id") { type = NavType.StringType },
+                navArgument("sessions") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            ConfirmationScreen(
+                title = backStackEntry.arguments?.getString("title") ?: "",
+                id = backStackEntry.arguments?.getString("id") ?: "",
+                sessions = backStackEntry.arguments?.getInt("sessions") ?: 0
+            )
+        }
+    }
+}
+
+@Composable
+fun ConfirmationScreen(
+    title: String,
+    id: String,
+    sessions: Int
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Confirmation", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(16.dp))
+        Text("Workshop Title: $title")
+        Text("Workshop ID: $id")
+        Text("Number of Sessions: $sessions")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RegistrationScreenPreview() {
+    RegistrationScreen(navController = rememberNavController())
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ConfirmationScreenPreview() {
+    ConfirmationScreen(
+        title = "Android Workshop",
+        id = "WS101",
+        sessions = 5
+    )
+}
